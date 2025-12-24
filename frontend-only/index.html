@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>給与明細管理システム</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app">
+        <!-- ヘッダー -->
+        <header class="app-header">
+            <div class="container">
+                <h1><i class="fas fa-file-invoice-dollar"></i> 給与明細管理システム</h1>
+                <nav class="header-nav">
+                    <button id="btn-dashboard" class="nav-btn active"><i class="fas fa-home"></i> ダッシュボード</button>
+                    <button id="btn-templates" class="nav-btn"><i class="fas fa-layer-group"></i> テンプレート管理</button>
+                    <button id="btn-import-export" class="nav-btn"><i class="fas fa-exchange-alt"></i> データ管理</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- メインコンテンツエリア -->
+        <main class="main-content">
+            <!-- ダッシュボード画面 -->
+            <section id="dashboard-view" class="view active">
+                <div class="container">
+                    <div class="dashboard-header">
+                        <h2>給与明細一覧</h2>
+                        <div class="action-buttons">
+                            <button id="btn-new-payslip" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> 新規作成
+                            </button>
+                            <button id="btn-copy-previous" class="btn btn-secondary">
+                                <i class="fas fa-copy"></i> 前月からコピー
+                            </button>
+                            <button id="btn-from-template" class="btn btn-secondary">
+                                <i class="fas fa-file-import"></i> テンプレートから作成
+                            </button>
+                            <button id="btn-export-semi-annual" class="btn btn-info">
+                                <i class="fas fa-file-pdf"></i> 半期PDF出力
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="payslip-list" class="payslip-grid">
+                        <!-- 給与明細カードがここに動的に追加されます -->
+                    </div>
+                    
+                    <div id="empty-state" class="empty-state" style="display: none;">
+                        <i class="fas fa-inbox"></i>
+                        <p>給与明細がまだありません</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('btn-new-payslip').click()">
+                            <i class="fas fa-plus"></i> 最初の給与明細を作成
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 給与明細編集画面 -->
+            <section id="editor-view" class="view">
+                <div class="container-fluid">
+                    <div class="editor-header">
+                        <button id="btn-back-to-dashboard" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> 戻る
+                        </button>
+                        <h2 id="editor-title">給与明細作成</h2>
+                        <div class="editor-actions">
+                            <button id="btn-save-template" class="btn btn-info">
+                                <i class="fas fa-save"></i> テンプレートとして保存
+                            </button>
+                            <button id="btn-clear-form" class="btn btn-warning">
+                                <i class="fas fa-eraser"></i> クリア
+                            </button>
+                            <button id="btn-save-payslip" class="btn btn-success">
+                                <i class="fas fa-check"></i> 保存
+                            </button>
+                            <button id="btn-export-pdf" class="btn btn-primary">
+                                <i class="fas fa-file-pdf"></i> PDF出力
+                            </button>
+                            <button id="btn-delete-payslip" class="btn btn-danger" style="display: none;">
+                                <i class="fas fa-trash"></i> 削除
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="editor-content">
+                        <!-- 左側: 入力フォーム -->
+                        <div class="form-section">
+                            <form id="payslip-form">
+                                <!-- 基本情報 -->
+                                <div class="form-card">
+                                    <h3><i class="fas fa-info-circle"></i> 基本情報</h3>
+                                    <div class="form-group">
+                                        <label for="issue-year">発行年月 <span class="required">*</span></label>
+                                        <div class="date-inputs">
+                                            <select id="issue-year" required>
+                                                <option value="">年</option>
+                                            </select>
+                                            <span>年</span>
+                                            <select id="issue-month" required>
+                                                <option value="">月</option>
+                                            </select>
+                                            <span>月</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="employee-name">氏名 <span class="required">*</span></label>
+                                        <input type="text" id="employee-name" placeholder="山田 太郎" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="company-name">会社名</label>
+                                        <input type="text" id="company-name" placeholder="株式会社サンプル">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="company-logo">会社ロゴ</label>
+                                        <input type="file" id="company-logo" accept="image/*">
+                                        <div id="logo-preview" class="logo-preview"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 労働期間 -->
+                                <div class="form-card">
+                                    <h3><i class="fas fa-calendar-alt"></i> 労働期間</h3>
+                                    <div class="form-group">
+                                        <label>開始日</label>
+                                        <div class="date-inputs">
+                                            <select id="work-start-year">
+                                                <option value="">年</option>
+                                            </select>
+                                            <span>年</span>
+                                            <select id="work-start-month">
+                                                <option value="">月</option>
+                                            </select>
+                                            <span>月</span>
+                                            <select id="work-start-day">
+                                                <option value="">日</option>
+                                            </select>
+                                            <span>日</span>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>終了日</label>
+                                        <div class="date-inputs">
+                                            <select id="work-end-year">
+                                                <option value="">年</option>
+                                            </select>
+                                            <span>年</span>
+                                            <select id="work-end-month">
+                                                <option value="">月</option>
+                                            </select>
+                                            <span>月</span>
+                                            <select id="work-end-day">
+                                                <option value="">日</option>
+                                            </select>
+                                            <span>日</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 勤怠情報 -->
+                                <div class="form-card">
+                                    <h3><i class="fas fa-clock"></i> 勤怠情報</h3>
+                                    <div class="form-group">
+                                        <label for="working-days">労働日数</label>
+                                        <input type="number" id="working-days" min="0" step="1" placeholder="0">
+                                        <span class="unit">日</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="working-hours">労働時間</label>
+                                        <input type="number" id="working-hours" min="0" step="0.1" placeholder="0.0">
+                                        <span class="unit">時間</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="overtime-hours">所定時間外労働</label>
+                                        <input type="number" id="overtime-hours" min="0" step="0.1" placeholder="0.0">
+                                        <span class="unit">時間</span>
+                                    </div>
+                                </div>
+
+                                <!-- 支給項目 -->
+                                <div class="form-card">
+                                    <h3><i class="fas fa-yen-sign"></i> 支給項目</h3>
+                                    <div class="form-group">
+                                        <label for="basic-salary">基本給 <span class="required">*</span></label>
+                                        <input type="number" id="basic-salary" min="0" step="1" placeholder="0" required>
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="tax-free-commute">非課税通勤費</label>
+                                        <input type="number" id="tax-free-commute" min="0" step="1" placeholder="0">
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="overtime-pay">残業手当</label>
+                                        <input type="number" id="overtime-pay" min="0" step="1" placeholder="0">
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="other-allowance">その他手当</label>
+                                        <input type="number" id="other-allowance" min="0" step="1" placeholder="0">
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group total-group">
+                                        <label>支給額合計</label>
+                                        <div id="total-earnings" class="calculated-value">0 円</div>
+                                    </div>
+                                </div>
+
+                                <!-- 控除項目 -->
+                                <div class="form-card">
+                                    <h3><i class="fas fa-minus-circle"></i> 控除項目</h3>
+                                    <div class="form-group">
+                                        <label for="income-tax">所得税 <span class="required">*</span></label>
+                                        <input type="number" id="income-tax" min="0" step="1" placeholder="0" required>
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="resident-tax">住民税 <span class="required">*</span></label>
+                                        <input type="number" id="resident-tax" min="0" step="1" placeholder="0" required>
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="health-insurance">健康保険 <span class="required">*</span></label>
+                                        <input type="number" id="health-insurance" min="0" step="1" placeholder="0" required>
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="pension-insurance">厚生年金 <span class="required">*</span></label>
+                                        <input type="number" id="pension-insurance" min="0" step="1" placeholder="0" required>
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="employment-insurance">雇用保険 <span class="required">*</span></label>
+                                        <input type="number" id="employment-insurance" min="0" step="1" placeholder="0" required>
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="other-deduction">その他控除</label>
+                                        <input type="number" id="other-deduction" min="0" step="1" placeholder="0">
+                                        <span class="unit">円</span>
+                                    </div>
+                                    <div class="form-group total-group">
+                                        <label>控除額合計</label>
+                                        <div id="total-deductions" class="calculated-value">0 円</div>
+                                    </div>
+                                </div>
+
+                                <!-- 差引支給額 -->
+                                <div class="form-card highlight-card">
+                                    <h3><i class="fas fa-hand-holding-usd"></i> 差引支給額（手取り額）</h3>
+                                    <div id="net-pay" class="net-pay-value">0 円</div>
+                                </div>
+
+                                <!-- フォーマット選択 -->
+                                <div class="form-card">
+                                    <h3><i class="fas fa-th-large"></i> フォーマット選択</h3>
+                                    <div class="form-group">
+                                        <label for="format-select">給与明細のレイアウト</label>
+                                        <select id="format-select">
+                                            <option value="1">フォーマット1 - 伝統的な縦型レイアウト</option>
+                                            <option value="2">フォーマット2 - モダンな横型レイアウト</option>
+                                            <option value="3">フォーマット3 - 詳細型レイアウト</option>
+                                            <option value="4">フォーマット4 - コンパクト型レイアウト</option>
+                                            <option value="5">フォーマット5 - 二段組レイアウト</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- 右側: プレビュー -->
+                        <div class="preview-section">
+                            <div class="preview-header">
+                                <h3><i class="fas fa-eye"></i> プレビュー</h3>
+                            </div>
+                            <div id="preview-container" class="preview-container">
+                                <!-- プレビューがここに表示されます -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- テンプレート管理画面 -->
+            <section id="templates-view" class="view">
+                <div class="container">
+                    <div class="dashboard-header">
+                        <h2>テンプレート管理</h2>
+                        <button id="btn-new-template" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> 新規テンプレート作成
+                        </button>
+                    </div>
+                    
+                    <div id="template-list" class="template-grid">
+                        <!-- テンプレートカードがここに動的に追加されます -->
+                    </div>
+                    
+                    <div id="template-empty-state" class="empty-state" style="display: none;">
+                        <i class="fas fa-layer-group"></i>
+                        <p>テンプレートがまだありません</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('btn-new-template').click()">
+                            <i class="fas fa-plus"></i> 最初のテンプレートを作成
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- データ管理画面 -->
+            <section id="data-management-view" class="view">
+                <div class="container">
+                    <h2>データ管理</h2>
+                    
+                    <div class="data-management-section">
+                        <div class="form-card">
+                            <h3><i class="fas fa-file-export"></i> データエクスポート</h3>
+                            <p>全ての給与明細とテンプレートをJSON形式でエクスポートします。バックアップとして保存できます。</p>
+                            <button id="btn-export-data" class="btn btn-primary">
+                                <i class="fas fa-download"></i> データをエクスポート
+                            </button>
+                        </div>
+                        
+                        <div class="form-card">
+                            <h3><i class="fas fa-file-import"></i> データインポート</h3>
+                            <p>エクスポートしたJSON形式のデータをインポートして復元します。</p>
+                            <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                            <button id="btn-import-data" class="btn btn-secondary">
+                                <i class="fas fa-upload"></i> データをインポート
+                            </button>
+                        </div>
+                        
+                        <div class="form-card danger-zone">
+                            <h3><i class="fas fa-exclamation-triangle"></i> 危険な操作</h3>
+                            <p>全てのデータを削除します。この操作は取り消せません。</p>
+                            <button id="btn-clear-all-data" class="btn btn-danger">
+                                <i class="fas fa-trash-alt"></i> 全データを削除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- 通知エリア -->
+        <div id="notification" class="notification"></div>
+
+        <!-- モーダル: 前月データ選択 -->
+        <div id="modal-select-previous" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-copy"></i> 前月データからコピー</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>コピー元の給与明細を選択してください：</p>
+                    <div id="previous-payslip-list" class="modal-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- モーダル: テンプレート選択 -->
+        <div id="modal-select-template" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-file-import"></i> テンプレートから作成</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>使用するテンプレートを選択してください：</p>
+                    <div id="template-selection-list" class="modal-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- モーダル: テンプレート作成/編集 -->
+        <div id="modal-template-editor" class="modal">
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3 id="template-editor-title"><i class="fas fa-plus"></i> 新規テンプレート作成</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="template-form">
+                        <div class="form-group">
+                            <label for="template-name">テンプレート名 <span class="required">*</span></label>
+                            <input type="text" id="template-name" placeholder="例: 正社員用、パート用" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="template-company-name">会社名</label>
+                            <input type="text" id="template-company-name" placeholder="株式会社サンプル">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>テンプレートに含める項目を選択：</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-basic-salary" checked>
+                                    基本給
+                                    <input type="number" id="template-basic-salary" min="0" step="1" placeholder="0">
+                                    円
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-tax-free-commute">
+                                    非課税通勤費
+                                    <input type="number" id="template-tax-free-commute" min="0" step="1" placeholder="0">
+                                    円
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-other-allowance">
+                                    その他手当
+                                    <input type="number" id="template-other-allowance" min="0" step="1" placeholder="0">
+                                    円
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-resident-tax">
+                                    住民税
+                                    <input type="number" id="template-resident-tax" min="0" step="1" placeholder="0">
+                                    円
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-health-insurance">
+                                    健康保険
+                                    <input type="number" id="template-health-insurance" min="0" step="1" placeholder="0">
+                                    円
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-pension-insurance">
+                                    厚生年金
+                                    <input type="number" id="template-pension-insurance" min="0" step="1" placeholder="0">
+                                    円
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="include-employment-insurance">
+                                    雇用保険
+                                    <input type="number" id="template-employment-insurance" min="0" step="1" placeholder="0">
+                                    円
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="template-format">デフォルトフォーマット</label>
+                            <select id="template-format">
+                                <option value="1">フォーマット1 - 伝統的な縦型レイアウト</option>
+                                <option value="2">フォーマット2 - モダンな横型レイアウト</option>
+                                <option value="3">フォーマット3 - 詳細型レイアウト</option>
+                                <option value="4">フォーマット4 - コンパクト型レイアウト</option>
+                                <option value="5">フォーマット5 - 二段組レイアウト</option>
+                            </select>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary modal-close">キャンセル</button>
+                            <button type="submit" class="btn btn-primary">保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- モーダル: 半期PDF出力 -->
+        <div id="modal-semi-annual" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-file-pdf"></i> 半期PDF出力（6ヶ月分）</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>PDFに含める期間を選択してください：</p>
+                    <div class="form-group">
+                        <label>開始年月</label>
+                        <div class="date-inputs">
+                            <select id="semi-annual-start-year">
+                                <option value="">年</option>
+                            </select>
+                            <span>年</span>
+                            <select id="semi-annual-start-month">
+                                <option value="">月</option>
+                            </select>
+                            <span>月</span>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary modal-close">キャンセル</button>
+                        <button type="button" id="btn-generate-semi-annual" class="btn btn-primary">
+                            <i class="fas fa-file-pdf"></i> PDF生成
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- スクリプト -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="db.js"></script>
+    <script src="formats.js"></script>
+    <script src="pdf-generator.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
